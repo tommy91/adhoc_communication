@@ -20,10 +20,11 @@ public:
     McHandler(const McHandler& orig);
     virtual ~McHandler();
     
+    std::list<McTree*>* getMcGroups();
     McTree* getMcGroup(std::string* group_name);
     McTree* getMcGroup(std::string* hostname_source, uint32_t* route_id);
     std::vector<McTree*> lostConnectionDownlinks(unsigned char* mac);
-        std::vector<McTree*> lostConnectionUplinks(unsigned char* mac);
+    std::vector<McTree*> lostConnectionUplinks(unsigned char* mac);
     void createGroupAsRoot(std::string* group_name);
     void addGroup(std::string* group_name);
     bool addUplinkRoute(routing_entry* route);

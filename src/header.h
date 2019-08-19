@@ -9,6 +9,8 @@
 #ifndef HEADER_H_
 #define HEADER_H_
 
+/*For debug*/
+#include <iostream>
 
 /*General includes*/
 #include "ros/ros.h"
@@ -240,6 +242,9 @@ std::string topic_new_robot = "new_robot";
 std::string topic_remove_robot = "remove_robot";
 std::string log_path = "";
 std::string sim_robot_macs = "";
+std::string good_neighbors = "";
+int publishers_queue_size = 100;
+bool use_latch = false;
 
 /*Simulation*/
 bool simulation_mode = false;
@@ -316,6 +321,7 @@ void resendRequestedFrames();
 bool sendPacket(std::string &hostname_destination, std::string& payload, uint8_t data_type_, std::string& topic);
 
 void initRobotMacList(std::string* robot_mac);
+void waitForSubscribers(string topic);
 template<class message>
 void publishMessage(message m, string topic);
 
@@ -331,9 +337,7 @@ uint32_t incoming_frames_lost = 0;
 
 int eth_raw_init()
 {
-
-
-    /* Vars */
+	/* Vars */
     int i;
     struct ifreq ifr;
     int ifindex = 0; /*Ethernet Interface index*/
@@ -355,7 +359,7 @@ int eth_raw_init()
         exit(1);
     }
     ifindex = ifr.ifr_ifindex;
-    ROS_INFO("Successfully got interface index: %i\n", ifindex);
+    ROS_INFO("Successfully got interface index: %i, with name: %s\n", ifindex, interface);
 
     /*retrieve corresponding MAC*/
     if (ioctl(raw_socket, SIOCGIFHWADDR, &ifr) == -1)
@@ -373,6 +377,9 @@ int eth_raw_init()
         ROS_INFO("Host MAC address: %02X:%02X:%02X:%02X:%02X:%02X\n",
                 src_mac[0], src_mac[1], src_mac[2], src_mac[3], src_mac[4], src_mac[5]);
     }
+
+    ROS_INFO("Host MAC address: %02X:%02X:%02X:%02X:%02X:%02X\n",
+    		src_mac[0], src_mac[1], src_mac[2], src_mac[3], src_mac[4], src_mac[5]);
 
     /*prepare sockaddr_ll*/
     socket_address.sll_family = PF_INET;
@@ -761,6 +768,8 @@ void initParams(ros::NodeHandle* n)
     n->param("nack_threshold", Packet::NACK_THRESHOLD, Packet::NACK_THRESHOLD);
 
     n->param("sim_robot_macs", sim_robot_macs, std::string("")); // exp: "robot_0,00:11:00:00:00:00!robot_0,00:11:00:00:00:00
+    n->param("good_neighbors", good_neighbors, std::string("")); // exp: "robot_0,00:11:00:00:00:00!robot_0,00:11:00:00:00:00
+
     RoutedFrame::enable_cooperative_relaying = enable_cooperative_relaying;
 
     //ROS_ERROR("mac from param %s",mac_as_string.c_str());
@@ -774,7 +783,14 @@ void initParams(ros::NodeHandle* n)
 
     interface = (unsigned char*) interface_as_string.data();
 
-    initRobotMacList(&sim_robot_macs);
+    if (simulation_mode)
+    {
+    	initRobotMacList(&sim_robot_macs);
+    }
+    else
+    {
+    	initRobotMacList(&good_neighbors);
+    }
 
     /*SET TX POWER ON HARDWARE IF SIMULATION MODE IS OFF*/
     if (simulation_mode == false)
@@ -791,12 +807,11 @@ bool isReachable(unsigned char mac[6])
 {
     if (simulation_mode)
     {
-        PositionSubscriber other_robot;
-        other_robot.robot_name_ = getHostnameFromMac(mac);
+        std::string other_robot_name_ = getHostnameFromMac(mac);
 
         for (std::list<PositionSubscriber*>::iterator it = robot_positions_l.begin(); it != robot_positions_l.end(); ++it)
         {
-            if (other_robot.robot_name_.compare((*it)->robot_name_) == 0)
+        	if ((*it)->robot_name_.compare(other_robot_name_) == 0)
             {
                 double d = my_sim_position->calcDistance(*it);
 
@@ -809,18 +824,22 @@ bool isReachable(unsigned char mac[6])
 
                 double p_rx = p_tx - (l_0_model + 10 * n_model * log10(d));
 
+                if (d < 10)
+                	return true;
+                else
+                	return false;
 
-                if (p_thres <= p_rx)
-                {
-                    //ROS_DEBUG("connected with %s %f %f",other_robot->robot_name_.c_str(),d,p_rx);
-                    return true;
-                } else
-                    return false;
+//                if (p_thres <= p_rx)
+//                {
+//                    //ROS_DEBUG("connected with %s %f %f",other_robot_name_.c_str(),d,p_rx);
+//                    return true;
+//                } else
+//                    return false;
 
             }
         }
 
-    } else if (sim_robot_macs.compare("") != 0)
+    } else if (good_neighbors.compare("") != 0)
     {
         boost::unique_lock<boost::mutex> lock(mtx_neighbors);
         hostname_mac n(mac);
@@ -1354,7 +1373,15 @@ void initRobotMacList(std::string * robot_mac)
             initMacFromString(hm.mac, hostname_mac_l[1].data());
 
             neighbors_l.push_back(hm);
-            ROS_ERROR("ADD TO WHITELIST: %s [%s]", hm.hostname.c_str(), getMacAsStr(hm.mac).c_str());
+
+            if (simulation_mode)
+            {
+            	ROS_ERROR("ADD TO SIM MACS: %s [%s]", hm.hostname.c_str(), getMacAsStr(hm.mac).c_str());
+            }
+            else
+			{
+            	ROS_ERROR("ADD TO WHITELIST: %s [%s]", hm.hostname.c_str(), getMacAsStr(hm.mac).c_str());
+			}
 
         } catch (const std::out_of_range& oor)
         {

@@ -1,0 +1,76 @@
+<launch>
+
+<arg name="system_id" default="1" />
+<arg name="node_args" default="" />
+<arg name="log_output" default="screen" />
+
+<arg name="interface" default="wlan0" />
+<arg name="mac" default="" />
+<arg name="num_link_retrans" default="10" />
+<arg name="num_e2e_retrans" default="10" />
+<arg name="num_rreq" default="1" />
+<arg name="max_frame_size" default="1500" />
+<arg name="hop_limit_min" default="0" />
+<arg name="hop_limit_max" default="0" />
+<arg name="hop_limit_increment" default="3" />
+
+<!-- 'use_custom_robot_name' is needed as condition for the if-unless 
+     such that 'robot_name' is used as param only if it is set -->
+<arg name="use_custom_robot_name" default="false" />
+<arg name="robot_name" default="" />
+
+<arg name="beacon_interval" default="250" />
+<arg name="max_packet_size" default="10000000" />
+
+<arg name="simulation_mode" default="true" />
+<arg name="robots_in_simulation" default="10" />
+<arg name="p_thres" default="-75" />
+<arg name="p_tx" default="15" />
+<arg name="n_model" default="4" />
+<arg name="l_0_model" default="33" />
+
+<arg name="topic_new_robot" default="new_robot" />
+<arg name="topic_remove_robot" default="remove_robot" />
+
+<arg name="rebuild_mc_tree" default="false" />
+<arg name="recursive_mc_ack" default="false" />
+<arg name="loss_ratio" default="0" />
+<arg name="nack_threshold" default="10" />
+<arg name="sim_robot_macs" default="" />
+
+
+<node pkg="adhoc_communication" type="adhoc_communication" name="networkNode$(arg system_id)" args="$(arg node_args)" output="$(arg log_output)">
+	
+	<param name="interface" value="$(arg interface)" />
+	<param name="mac" value="$(arg mac)" />
+	<param name="num_link_retrans" value="$(arg num_link_retrans)" />
+	<param name="num_e2e_retrans" value="$(arg num_e2e_retrans)" />
+	<param name="num_rreq" value="$(arg num_rreq)" />
+	<param name="max_frame_size" value="$(arg max_frame_size)" />
+	<param name="hop_limit_min" value="$(arg hop_limit_min)" />
+	<param name="hop_limit_max" value="$(arg hop_limit_max)" />
+	<param name="hop_limit_increment" value="$(arg hop_limit_increment)" />
+	
+	<group if="$(arg use_custom_robot_name">
+		<param name="robot_name" value="$(arg robot_name)" />
+	</group>
+	
+	<param name="beacon_interval" value="$(arg beacon_interval)" />
+	<param name="max_packet_size" value="$(arg max_packet_size)" />
+	<param name="simulation_mode" value="$(arg simulation_mode)" />
+	<param name="robots_in_simulation" value="$(arg robots_in_simulation)" />
+	<param name="p_thres" value="$(arg p_thres)" />
+	<param name="p_tx" value="$(arg p_tx)" />
+	<param name="n_model" value="$(arg n_model)" />
+	<param name="l_0_model" value="$(arg l_0_model)" />
+	<param name="topic_new_robot" value="$(arg topic_new_robot)" />
+	<param name="topic_remove_robot" value="$(arg topic_remove_robot)" />
+	<param name="rebuild_mc_tree" value="$(arg rebuild_mc_tree)" />
+	<param name="recursive_mc_ack" value="$(arg recursive_mc_ack)" />
+	<param name="loss_ratio" value="$(arg loss_ratio)" />
+	<param name="nack_threshold" value="$(arg nack_threshold)" />
+	<param name="sim_robot_macs" value="$(arg sim_robot_macs)" />
+	
+</node>
+
+</launch>

@@ -239,7 +239,18 @@ bool joinMCGroup(adhoc_communication::ChangeMCMembership::Request &req, adhoc_co
                 ROS_INFO("ACTIVATE MC ROUTE: MC GROUP[%s] NEXT HOP[%s]", t->group_name_.c_str(), getMacAsStr(t->route_uplink_->next_hop).c_str());
                 ROS_INFO("SUCCESSFULLY JOINED GROUP MC: [%s]", req.group_name.c_str());
 
+#ifdef DEBUG
+                ROS_ERROR("ALL MC CONNECTIONS OF ROBOT %s:",hostname.c_str());
+                std::list<McTree*>* mc_groups = mc_handler.getMcGroups();
+                for (std::list<McTree*>::iterator it = mc_groups->begin(); it != mc_groups->end(); ++it)
+				{
+					McTree* tree = *it;
+					tree->printTree();
+				}
+#endif
+
                 socketSend(network_string);
+
 #ifdef PERFORMANCE_LOGGING_MC_LINK_SUMMARY
                 Logging::increaseProperty("num_mc_ract_sent");
                 Logging::increaseProperty("num_mc_total_bytes_sent ", network_string.length());
@@ -544,6 +555,7 @@ bool sendString(adhoc_communication::SendString::Request &req, adhoc_communicati
 #endif
     ROS_DEBUG("Service called to send string..");
 
+    ROS_INFO("Sending string to %s", req.dst_robot);
     res.status = sendPacket(req.dst_robot, req.data, FRAME_DATA_TYPE_ANY, req.topic);
 
 #ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
@@ -1044,6 +1056,7 @@ int main(int argc, char **argv)
      * Check if i got the frame already.
      * If not process the frame.
      */
+
     ros::init(argc, argv, "adhoc_communication");
 
     ros::NodeHandle b("~");
@@ -1111,12 +1124,23 @@ int main(int argc, char **argv)
 
     ros::ServiceServer getGroupStatusS = n_pub->advertiseService(robot_prefix + node_prefix + "get_group_state", getGroupStateF);
 
-    publishers_l.push_front(n_pub->advertise<std_msgs::String>(robot_prefix + node_prefix + topic_new_robot, 1000, true));
-    publishers_l.push_front(n_pub->advertise<std_msgs::String>(robot_prefix + node_prefix + topic_remove_robot, 1000, true));
+    publishers_l.push_front(n_pub->advertise<std_msgs::String>(robot_prefix + node_prefix + topic_new_robot, publishers_queue_size, use_latch));
+    publishers_l.push_front(n_pub->advertise<std_msgs::String>(robot_prefix + node_prefix + topic_remove_robot, publishers_queue_size, use_latch));
 
     Logging::init(n_pub, &hostname);
 
     signal(SIGSEGV, handler); // install handler  
+
+
+#ifdef WAIT_FOR_SUBSCRIBERS
+    /* Wait for the publishers of topic_new_robot and topic_remove_robot to have a subscriber
+     * such that no message published is lost (meaning no messages are send to no one).
+     * This function currently just waits for a subscriber per publisher.
+     */
+    waitForSubscribers(robot_prefix + node_prefix + topic_new_robot);
+    waitForSubscribers(robot_prefix + node_prefix + topic_remove_robot);
+#endif
+
 
     /*Tutorial*/
     //ros::ServiceServer sendQuaternionS = n->advertiseService("send_quaternion", sendQuaternion);
@@ -1160,15 +1184,13 @@ int main(int argc, char **argv)
 
     if (simulation_mode)
     {
-        my_sim_position = new PositionSubscriber();
-        my_sim_position->robot_name_ = hostname;
         std::string topic = "/" + hostname;
         topic.append("/base_pose_ground_truth");
 
         const char* robot_number_pos = hostname.data() + 6; // Example: robot_1 or robot_2 -> robot_i
         try
         {
-            my_sim_position->robot_number_ = boost::lexical_cast<uint32_t>(std::string(robot_number_pos));
+        	my_sim_position = new PositionSubscriber(hostname, boost::lexical_cast<uint32_t>(std::string(robot_number_pos)));
         } catch (boost::bad_lexical_cast const&)
         {
             ROS_FATAL("If parameter simulation mode is set, the hostname of the robot must be like the robot names of the stage robot names, e.g., robot_0 or robot_1 etc.");
@@ -1184,14 +1206,13 @@ int main(int argc, char **argv)
                 topic_to_sub.append(i_as_str);
 
                 topic_to_sub.append("/base_pose_ground_truth");
-                PositionSubscriber* sub = new PositionSubscriber();
-                sub->robot_name_ = std::string("robot_").append(i_as_str);
-                sub->robot_number_ = i;
+                PositionSubscriber* sub = new PositionSubscriber(std::string("robot_").append(i_as_str), i);
                 sub_robot_pos_l.push_front(n_pub->subscribe(topic_to_sub, 1, &PositionSubscriber::Subscribe, &*sub));
                 robot_positions_l.push_front(sub);
             }
-            else
-                sub_robot_pos_l.push_front(n_pub->subscribe(topic, 1, &PositionSubscriber::Subscribe, &*my_sim_position));
+            else {
+            	sub_robot_pos_l.push_front(n_pub->subscribe(topic, 1, &PositionSubscriber::Subscribe, &*my_sim_position));
+            }
         }
     }
 
@@ -1469,6 +1490,8 @@ void receiveFrames()
             AckLinkFrame inc_ack_lframe(buffer_incoming);
             bool frame_is_4_me = compareMac(src_mac, inc_ack_lframe.header_.mac_destination_);
 
+            std::cout << "Received FRAME_TYPE_ACK (4 me: " << frame_is_4_me << ")" << std::endl;
+
             buffer_size = inc_ack_lframe.buffer_str_len_;
 
             /* continue if cr is disabled and frame is an neg ack*/
@@ -1599,7 +1622,8 @@ void receiveFrames()
                     }
                     adhoc_communication::RecvString data;
                     data.src_robot = bcast.hostname_source_;
-                    data.data = bcast.payload_;                  
+                    data.data = bcast.payload_;
+                    ROS_INFO("Received data from %s: %s", data.src_robot, data.data);
                     publishMessage(data, bcast.topic_);
                 }
 
@@ -1624,6 +1648,25 @@ void receiveFrames()
     free(buffer_incoming);
 }
 
+void waitForSubscribers(string topic)
+{
+	/*
+	 * Input requires the correct full name topic respect to simulation_mode
+	 */
+	for (std::list<ros::Publisher>::iterator i = publishers_l.begin(); i != publishers_l.end(); i++)
+	{
+		if ((*i).getTopic().compare(topic) == 0)
+		{
+			ROS_INFO("Waiting for subscribers to %s.. ", topic.c_str());
+			while (! ((*i).getNumSubscribers() > 0) )
+			{
+				ros::Duration(1).sleep();	// in seconds
+			}
+			ROS_INFO("The publisher for the topic %s has %i subscribers.", topic.c_str(), (*i).getNumSubscribers());
+		}
+	}
+}
+
 template<class message>
 void publishMessage(message m, string topic)
 {
@@ -1643,13 +1686,13 @@ void publishMessage(message m, string topic)
         {
             if ((*i).getTopic().compare(topic) == 0)
             {
-                (*i).publish(m);
+            	(*i).publish(m);
                 pubExsists = true;
             }
         }
         if (!pubExsists)
         {
-            publishers_l.push_front(n_pub->advertise<message>(topic, 1000, true));
+        	publishers_l.push_front(n_pub->advertise<message>(topic, publishers_queue_size, true));
             publishers_l.front().publish(m);
             //todo check if ledge = true is working
         }
@@ -1740,8 +1783,8 @@ void sendLinkAck(unsigned char* dest, unsigned char* confirmer_mac, uint32_t id,
 {
     AckLinkFrame ack = AckLinkFrame(src_mac, confirmer_mac, dest, id, source, type);
     ack.cr_flag_ = cr;
-    //   ROS_ERROR("send link ack:");
-    //   ack.print_frame();
+    ROS_ERROR("send link ack:");
+    ack.print_frame();
     string network_string = ack.getFrameAsNetworkString();
     socketSend(network_string);
 #ifdef PERFORMANCE_LOGGING_UC_LINK_SUMMARY
@@ -2705,7 +2748,7 @@ void processMcActivationFrame(McRouteActivationFrame * f)
 
     boost::unique_lock<boost::mutex> lock_mc_groups(mtx_mc_groups);
 
-    sendLinkAck(f->eh_h_.eh_dest, src_mac, f->header_.id, "", false, FRAME_TYPE_MC_ACTIVATION);
+    sendLinkAck(f->eh_h_.eh_source, src_mac, f->header_.id, "", false, FRAME_TYPE_MC_ACTIVATION);
 
 #ifdef PERFORMANCE_LOGGING_MC_LINK_SUMMARY
     Logging::increaseProperty("num_mc_ract_received");
@@ -2722,6 +2765,7 @@ void processMcActivationFrame(McRouteActivationFrame * f)
         {
 
             ROS_INFO("ADD NEW LEAFE TO MC TREE: GROUP[%s] LEAFE MAC[%s]", f->mc_group_.c_str(), getMacAsStr(f->eh_h_.eh_source).c_str());
+            mc_t->printTree();
             //mc_handler.printMcGroups();
         }
         else

@@ -139,5 +139,5 @@ std::string AckLinkFrame::getFrameAsNetworkString()
 void AckLinkFrame::print_frame()
 {
     ROS_ERROR("FRAME ID [%u] SRC[%s] TYPE[%u]", header_.frame_id,hostname_source_.c_str(), header_.ack_frame_type);
-    ROS_ERROR("MAC_CONF[%s] SRC MAC[%s] DST MAC[%s]", getMacAsStr(header_.mac_confirmer).c_str(),getMacAsStr(eh_h_.eh_source).c_str(),getMacAsStr(eh_h_.eh_dest).c_str()  );
+    ROS_ERROR("MAC_CONF[%s] MAC_RECV[%s] SRC MAC[%s] DST MAC[%s]", getMacAsStr(header_.mac_confirmer).c_str(),getMacAsStr(header_.mac_destination_).c_str(),getMacAsStr(eh_h_.eh_source).c_str(),getMacAsStr(eh_h_.eh_dest).c_str()  );
 }

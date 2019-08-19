@@ -102,7 +102,7 @@ while not rospy.is_shutdown():
 					#rospy.loginfo("dis:%i"%dis)
 					if dis < distance_to_connect:
 						name = "/robot_%i/adhoc_communication/join_mc_group"%cur_robot
-						group_name = "robot_"+str(compare_robot)
+						group_name = "mc_robot_"+str(compare_robot)
 						rospy.loginfo("%s"%group_name)
 						rospy.loginfo(" is calling %s to join group"%name)
 						join_service = rospy.ServiceProxy(name, ChangeMCMembership)

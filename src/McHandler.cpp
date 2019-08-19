@@ -26,6 +26,11 @@ McHandler::~McHandler()
 {
 }
 
+std::list<McTree*>* McHandler::getMcGroups()
+{
+	return groups_;
+}
+
 McTree* McHandler::getMcGroup(std::string* group_name)
 {
 

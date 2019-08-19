@@ -20,7 +20,7 @@ public:
 	/*! Packet constructor.
 	Constructor without parametes.
 	*/
-	PositionSubscriber() ;
+	PositionSubscriber(std::string robot_name, uint32_t robot_number) ;
 	virtual ~PositionSubscriber();
 
 	/*!
@@ -48,7 +48,7 @@ public:
 	*/
 	void Subscribe(const nav_msgs::Odometry::ConstPtr& position);
 
-        bool initialized; ///< Defines if the robot position has been initialized 
+    bool initialized; ///< Defines if the robot position has been initialized
 	std::string robot_name_; ///< Name of the robot in stage. e.g: "robot_0"
 	uint32_t robot_number_; ///< Number of the robot in stage. e.g: number of "robot_0" would be "0"
 

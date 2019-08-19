@@ -9,14 +9,15 @@
 #include <cmath>
 #include <string>
 
-PositionSubscriber::PositionSubscriber()
+PositionSubscriber::PositionSubscriber(std::string robot_name, uint32_t robot_number)
 {
-    // TODO Auto-generated constructor stub
+	robot_name_ = robot_name;
+	robot_number_ = robot_number;
     initialized = false;
     x_pos_ = 0;
     y_pos_ = 0;
     callback_count = 0;
-    callback_refresh = 4; // every 10 call of the subscribe f, the position will be updated.
+    callback_refresh = 1; // every 'callback_refresh' calls of the Subscribe function, the position will be updated.
 }
 
 PositionSubscriber::~PositionSubscriber()
@@ -33,6 +34,7 @@ void PositionSubscriber::Subscribe(const nav_msgs::Odometry::ConstPtr& position)
         initialized = true;
         this->x_pos_ = position->pose.pose.position.x;
         this->y_pos_ = position->pose.pose.position.y;
+        ROS_INFO("Received new position for %s: (%f, %f)", this->robot_name_.c_str(), this->x_pos_, this->y_pos_);
 
         //	x_pos_ = 7.3f;
     }

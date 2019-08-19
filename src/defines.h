@@ -56,7 +56,7 @@ unsigned char bcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};	/*Broadcast a
 
 
 #define MAX_INTERN_JOIN_ATTEMPS 5  //defines how often a robot will try to join a mc group
-#define MAX_JOIN_ATTEMPS 5  //defines how often a robot will try to join a mc group
+#define MAX_JOIN_ATTEMPS 1  //defines how often a robot will try to rejoin a mc group
 #define INTERVAL_WAIT_MC_RECONN 200 //[ms]if a node gets a prune message, it will will a little to give the network time for synconization
 #define INTERWAL_RECONNECT_MC_G 500 // ms
 
@@ -103,6 +103,10 @@ unsigned char bcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};	/*Broadcast a
 
 //8020
 bool burst_multicast = true;
+
+
+#define WAIT_FOR_SUBSCRIBERS
+
 
 #endif /* DEFINES_H_ */
 
