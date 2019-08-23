@@ -48,21 +48,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-   #AuctionStatus.msg
-   ExpAuction.msg
-   ExpAuctionElement.msg
-   ExpFrontierElement.msg
-   MmControl.msg
-   MmMapUpdate.msg
-   MmRobotPosition.msg
-   ExpCluster.msg
-   ExpClusterElement.msg
-   ExpFrontier.msg
-   MmListOfPoints.msg
-   MmPoint.msg
    RecvString.msg
-   CMgrDimensions.msg
-   CMgrRobotUpdate.msg
  )
 
 
@@ -71,22 +57,10 @@ find_package(catkin REQUIRED COMPONENTS
  add_service_files(
    FILES
    ChangeMCMembership.srv
-   SendExpAuction.srv
-   SendExpFrontier.srv
-   SendMmMapUpdate.srv  
-   SendMmRobotPosition.srv
-   SendQuaternion.srv
    GetNeighbors.srv
-   SendExpCluster.srv
-   SendMmControl.srv
-   SendMmPoint.srv
-   SendOccupancyGrid.srv
    SendString.srv
    GetGroupState.srv
-   SendTwist.srv
-   SendCMgrRobotUpdate.srv
    ShutDown.srv
-   BroadcastCMgrRobotUpdate.srv
    BroadcastString.srv
  )
 

@@ -598,36 +598,6 @@ void processMcDisconnectDownlink(McDisconnectFrame* f)
         mc_handler.removeGroup(&f->mc_group_);
 }
 
-void testPacket()
-{
-    int packet_size = 10;
-    int packet_id = 0;
-    Packet p;
-    std::vector<RoutedFrame> l;
-
-    for (int packet_seq = 0; packet_seq < packet_size; packet_seq++)
-    {
-        RoutedFrame f("topic", "random_data", 2, packet_id, packet_seq, packet_size);
-        l.push_back(f);
-
-        if (packet_seq == 0)
-            p = Packet(f);
-
-        if (packet_seq % 2 == 0)
-        {
-            ROS_ERROR("add %u", packet_seq);
-            p.addFrame(f);
-        } else
-            ROS_ERROR("skip %u", packet_seq);
-    }
-
-    ROS_ERROR("missings seq: %s %u %lu %lu", getListAsString(p.missed_sequences_l_).c_str(), p.size_, p.frames_l_.size(), p.missed_sequences_l_.size());
-
-    p.refreshLists();
-
-    ROS_ERROR("missings seq: %s %u %lu %lu", getListAsString(p.missed_sequences_l_).c_str(), p.size_, p.frames_l_.size(), p.missed_sequences_l_.size());
-}
-
 bool gotFrameRecently(RoutedFrame rf)
 {
     /* Description:

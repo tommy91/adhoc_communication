@@ -1,6 +1,7 @@
 /*!
  * \file adhoc_communication.cpp
- * \author Günther Cwioro
+ * \author Original author: Günther Cwioro
+ * \author Code edited by: Vuaran Tommaso
  * \brief Main file for the ad hoc communication node including the main function.
  *
  * Description:
@@ -9,29 +10,43 @@
  *
  * Node instruction:
  *
- * The node advertise three services:
- * 1) 	name: send_string type: sendString
- * 		This service is to send any data in form from a string over the network.
- * 		Publish type: getData
+ * The node advertise the following services:
+ * 1) 	name: send_string
+ * 		type: adhoc_communication::sendString
+ * 		use: to send any data in form of a string over the network.
+ * 		     At the receiver the data will be published locally on the topic specified in the request.
+ * 		     (To broadcast a message you must set the destination hostname as an empty string.)
+ * 		publish type (at the receiver): adhoc_communication/RecvString
  *
- * 2)	name: send_map type: sendOccupancyGrid
- * 		This service sends serialized ROS messages
- * 		Publish type: nav_msgs/OccupancyGrid
+ * 2)	name: get_neighbors
+ * 		type: adhoc_communication::GetNeighbors
+ * 		use: to get the reachable neighbors
  *
- * 3)  	name: send_position type: sendPosition
- * 		This service sends serialized ROS messages
- * 		Publish type: positionExchange
+ * 3)	name: join_mc_group
+ * 		type: adhoc_communication::ChangeMCMembership
+ * 		use: to tell the node to attempt to connect to (or disconnect from) a multicast group
  *
- * Every service request has a field for the hostname of the destination and a field for the topic to publish the message.
- * If you want to broadcast a message you must set the destination hostname as an empty string.
- * NOTE: Broadcast don't include acknowledgments and can only be send to direct neighbors and if just one frame of the broadcast packet will be lost over transmission, the whole packet is useless.
+ * 4)	name: broadcast_string
+ * 		type: adhoc_communication::BroadcastString
+ * 		use: to send any data in form of a string over the network as a broadcast, meaning no ack will be received by the sender.
+ * 		     Also no segmentation will be applied if the packet is too big.
+ * 		     At the receiver the data will be published locally on the topic specified in the request.
  *
- * The node 'communication_tester' of this package demonstrate how you can use the services.
- * There is also a tutorial to adapt this node to implement a service to send your own ROS messages.
+ * 5)	name: shut_down
+ * 		type: adhoc_communication::ShutDown
+ * 		use: to shut down the ros node
  *
- * The node have a lot of parameter and defines that can be changed. There is a list of all parameters and defines in the docu foldere.
+ * 6)	name: get_group_state
+ * 		type: adhoc_communication::GetGroupState
+ * 		use: to get the status of a specified multicast group
  *
- *Special Notes: (not important for users)
+ *
+ * NOTE:
+ * Broadcast don't include acknowledgments and if just one frame of the broadcast packet will be lost over transmission, the whole packet is useless.
+ */
+
+/*
+ * Special Notes: (not important for users)
  *
  * For debugging reasons there is an option to set the hostname and the mac of the node manually.
  * There is also the opportunity to give the node only a few of reachable hosts.
@@ -352,47 +367,6 @@ bool getNeighbors(adhoc_communication::GetNeighbors::Request &req, adhoc_communi
     return true;
 }
 
-/*tutorial*/
-bool sendQuaternion(adhoc_communication::SendQuaternion::Request &req,
-        adhoc_communication::SendQuaternion::Response & res)
-{
-    /* Description:
-     * Service call to send QUATERNION.
-     */
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    unsigned long time_call = getMillisecondsTime();
-#endif
-
-    ROS_DEBUG("Service called to QUATERNION...");
-    string s_msg = getSerializedMessage(req.quaternion);
-    /*Call the function sendPacket and with the serialized object and the frame payload type as parameter*/
-    res.status = sendPacket(req.dst_robot, s_msg, FRAME_DATA_TYPE_QUATERNION, req.topic);
-
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    Logging::logServiceCalls("SendQuaternion", time_call, getMillisecondsTime(), s_msg.size(), res.status);
-#endif
-    return true;
-}
-
-bool sendMap(adhoc_communication::SendOccupancyGrid::Request &req, adhoc_communication::SendOccupancyGrid::Response & res)
-{
-    /* Description:
-     * Service call to send OccupancyGrid.
-     */
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    unsigned long time_call = getMillisecondsTime();
-#endif
-
-    ROS_DEBUG("Service called to send map..");
-    string s_msg = getSerializedMessage(req.map);
-    res.status = sendPacket(req.dst_robot, s_msg, FRAME_DATA_TYPE_MAP, req.topic);
-
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    Logging::logServiceCalls("SendOccupancyGrid", time_call, getMillisecondsTime(), s_msg.size(), res.status);
-#endif
-    return res.status;
-}
-
 bool sendBroadcast(string& topic, string& data, uint8_t type, uint16_t range)
 {
     MultiHopBroadcastFrame b(topic, data, hostname, type, range);
@@ -426,123 +400,6 @@ bool sendBroadcastString(adhoc_communication::BroadcastString::Request &req, adh
     return res.status;
 }
 
-bool sendBroadcastCMgrRobotUpdate(adhoc_communication::BroadcastCMgrRobotUpdate::Request &req, adhoc_communication::BroadcastCMgrRobotUpdate::Response & res)
-{
-    /* Description:
-     * Service call to send OccupancyGrid.
-     */
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    unsigned long time_call = getMillisecondsTime();
-#endif
-    ROS_DEBUG("Service called to send broadcast update..");
-
-    string s_msg = getSerializedMessage(req.update);
-
-
-    res.status = sendBroadcast(req.topic, s_msg, FRAME_DATA_TYPE_ROBOT_UPDATE, req.hop_limit);
-
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    Logging::logServiceCalls("BroadcastCMgrRobotUpdate", time_call, getMillisecondsTime(), s_msg.size(), res.status);
-#endif
-    return res.status;
-}
-
-bool sendRobotUpdate(adhoc_communication::SendCMgrRobotUpdate::Request &req, adhoc_communication::SendCMgrRobotUpdate::Response & res)
-{
-    /* Description:
-     * Service call to send OccupancyGrid.
-     */
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    unsigned long time_call = getMillisecondsTime();
-#endif
-    ROS_DEBUG("Service called to send robot update..");
-
-    string s_msg = getSerializedMessage(req.update);
-    res.status = sendPacket(req.dst_robot, s_msg, FRAME_DATA_TYPE_ROBOT_UPDATE, req.topic);
-
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    Logging::logServiceCalls("SendCMgrRobotUpdate", time_call, getMillisecondsTime(), s_msg.size(), res.status);
-#endif
-    return res.status;
-}
-
-bool sendTwist(adhoc_communication::SendTwist::Request &req, adhoc_communication::SendTwist::Response & res)
-{
-    /* Description:
-     * Service call to send OccupancyGrid.
-     */
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    unsigned long time_call = getMillisecondsTime();
-#endif
-    ROS_DEBUG("Service called to send twist..");
-    string s_msg = getSerializedMessage(req.twist);
-
-    res.status = sendPacket(req.dst_robot, s_msg, FRAME_DATA_TYPE_TWIST, req.topic);
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    Logging::logServiceCalls("SendTwist", time_call, getMillisecondsTime(), s_msg.size(), res.status);
-#endif
-    return res.status;
-}
-
-bool sendPosition(adhoc_communication::SendMmRobotPosition::Request &req, adhoc_communication::SendMmRobotPosition::Response & res)
-{
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    unsigned long time_call = getMillisecondsTime();
-#endif
-    /* Description:
-     * Service call to send PoseStamped.
-     */
-    ROS_DEBUG("Service called to send position..");
-
-    string s_msg = getSerializedMessage(req.position);
-    res.status = sendPacket(req.dst_robot, s_msg, FRAME_DATA_TYPE_POSITION, req.topic);
-
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    Logging::logServiceCalls("SendMmRobotPosition", time_call, getMillisecondsTime(), s_msg.size(), res.status);
-#endif
-    return res.status;
-}
-
-bool sendAuction(adhoc_communication::SendExpAuction::Request &req, adhoc_communication::SendExpAuction::Response & res)
-{
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    unsigned long time_call = getMillisecondsTime();
-#endif
-    /* Description:
-     * Service call to send Auction.
-     */
-
-    ROS_DEBUG("Service called to send Auction..");
-
-    string s_msg = getSerializedMessage(req.auction);
-    res.status = sendPacket(req.dst_robot, s_msg, FRAME_DATA_TYPE_AUCTION, req.topic);
-
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    Logging::logServiceCalls("SendExpAuction", time_call, getMillisecondsTime(), s_msg.size(), res.status);
-#endif
-    return res.status;
-}
-
-bool sendCluster(adhoc_communication::SendExpCluster::Request &req, adhoc_communication::SendExpCluster::Response & res)
-{
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    unsigned long time_call = getMillisecondsTime();
-#endif
-    /* Description:
-     * Service call to send Cluster.
-     */
-
-    ROS_DEBUG("Service called to send cluster..");
-
-    string s_msg = getSerializedMessage(req.cluster);
-    res.status = sendPacket(req.dst_robot, s_msg, FRAME_DATA_TYPE_CLUSTER, req.topic);
-
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    Logging::logServiceCalls("SendExpCluster", time_call, getMillisecondsTime(), s_msg.size(), res.status);
-#endif
-    return res.status;
-}
-
 bool sendString(adhoc_communication::SendString::Request &req, adhoc_communication::SendString::Response & res)
 {
     /* Description:
@@ -561,84 +418,6 @@ bool sendString(adhoc_communication::SendString::Request &req, adhoc_communicati
 #ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
 
     Logging::logServiceCalls("SendString", time_call, getMillisecondsTime(), req.data.size(), res.status);
-#endif
-    return res.status;
-}
-
-bool sendPoint(adhoc_communication::SendMmPoint::Request &req, adhoc_communication::SendMmPoint::Response & res)
-{
-    /* Description:
-     * Service call to send PoseStamped.
-     */
-
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    unsigned long time_call = getMillisecondsTime();
-#endif
-    ROS_DEBUG("Service called to send point..");
-
-    string s_msg = getSerializedMessage(req.point);
-    res.status = sendPacket(req.dst_robot, s_msg, FRAME_DATA_TYPE_POINT, req.topic);
-
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    Logging::logServiceCalls("SendMmPoint", time_call, getMillisecondsTime(), s_msg.size(), res.status);
-#endif
-    return res.status;
-}
-
-bool sendControlMessage(adhoc_communication::SendMmControl::Request &req, adhoc_communication::SendMmControl::Response & res)
-{
-    /* Description:
-     * Service call to send PoseStamped.
-     */
-    ROS_DEBUG("Service called to send control message..");
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    unsigned long time_call = getMillisecondsTime();
-#endif
-    string s_msg = getSerializedMessage(req.msg);
-    res.status = sendPacket(req.dst_robot, s_msg, FRAME_DATA_TYPE_CONTROLL_MSG, req.topic);
-
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    Logging::logServiceCalls("SendMmControl", time_call, getMillisecondsTime(), s_msg.size(), res.status);
-#endif
-    return res.status;
-}
-
-bool sendMapUpdate(adhoc_communication::SendMmMapUpdate::Request &req, adhoc_communication::SendMmMapUpdate::Response & res)
-{
-    /* Description:
-     * Service call to send PoseStamped.
-     */
-
-    ROS_DEBUG("Service called to send map update..");
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    unsigned long time_call = getMillisecondsTime();
-#endif
-    string s_msg = getSerializedMessage(req.map_update);
-    res.status = sendPacket(req.dst_robot, s_msg, FRAME_DATA_TYPE_MAP_UPDATE, req.topic);
-
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    Logging::logServiceCalls("SendMmMapUpdate", time_call, getMillisecondsTime(), s_msg.size(), res.status);
-#endif
-    return res.status;
-}
-
-bool sendFrontier(adhoc_communication::SendExpFrontier::Request &req, adhoc_communication::SendExpFrontier::Response & res)
-{
-    /* Description:
-     * Service call to send PoseStamped.
-     */
-
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    unsigned long time_call = getMillisecondsTime();
-#endif
-    string s_msg = getSerializedMessage(req.frontier);
-    ROS_DEBUG("Service called to send frontier..");
-
-
-    res.status = sendPacket(req.dst_robot, s_msg, FRAME_DATA_TYPE_FRONTIER, req.topic);
-
-#ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
-    Logging::logServiceCalls("SendExpFrontier", time_call, getMillisecondsTime(), s_msg.size(), res.status);
 #endif
     return res.status;
 }
@@ -1035,19 +814,6 @@ bool sendPacket(std::string &hostname_destination, std::string& payload, uint8_t
     return send_successfully;
 }
 
-void checkMutexAvailability(boost::mutex* m, string name)
-{
-    while (ros::ok())
-    {
-        sleepMS(100);
-
-        if (!mtx_packets_incomplete.try_lock())
-            ROS_ERROR("mutex %s is not free", name.c_str());
-        else
-            mtx_packets_incomplete.unlock();
-    }
-}
-
 int main(int argc, char **argv)
 {
     /* Description:
@@ -1101,27 +867,11 @@ int main(int argc, char **argv)
         robot_prefix = "/" + hostname + "/";
     }
 
-    ros::ServiceServer sendRobotUpdateS = n_pub->advertiseService(robot_prefix + node_prefix + "send_robot_update",
-            sendRobotUpdate);
-
-    ros::ServiceServer sendTwistS = n_pub->advertiseService(robot_prefix + node_prefix + "send_twist",
-            sendTwist);
-    ros::ServiceServer sendMapS = n_pub->advertiseService(robot_prefix + node_prefix + "send_map", sendMap);
-    ros::ServiceServer sendPostionS = n_pub->advertiseService(robot_prefix + node_prefix + "send_position", sendPosition);
     ros::ServiceServer sendStringS = n_pub->advertiseService(robot_prefix + node_prefix + "send_string", sendString);
     ros::ServiceServer getNeighborsS = n_pub->advertiseService(robot_prefix + node_prefix + "get_neighbors", getNeighbors);
-    ros::ServiceServer sendPointS = n_pub->advertiseService(robot_prefix + node_prefix + "send_point", sendPoint);
-    ros::ServiceServer sendMapUpdateS = n_pub->advertiseService(robot_prefix + node_prefix + "send_map_update", sendMapUpdate);
-    ros::ServiceServer sendControlMsgS = n_pub->advertiseService(robot_prefix + node_prefix + "send_control_message", sendControlMessage);
     ros::ServiceServer joinMCGroupS = n_pub->advertiseService(robot_prefix + node_prefix + "join_mc_group", joinMCGroup);
-    ros::ServiceServer sendFrontierS = n_pub->advertiseService(robot_prefix + node_prefix + "send_frontier", sendFrontier);
-    ros::ServiceServer sendClusterS = n_pub->advertiseService(robot_prefix + node_prefix + "send_cluster", sendCluster);
-    ros::ServiceServer sendAuctionS = n_pub->advertiseService(robot_prefix + node_prefix + "send_auction", sendAuction);
-    ros::ServiceServer sendBcastS = n_pub->advertiseService(robot_prefix + node_prefix + "broadcast_robot_update", sendBroadcastCMgrRobotUpdate);
     ros::ServiceServer sendBcastStringS = n_pub->advertiseService(robot_prefix + node_prefix + "broadcast_string", sendBroadcastString);
-
     ros::ServiceServer shutDownRosS = n_pub->advertiseService(robot_prefix + node_prefix + "shut_down", shutDownRos);
-
     ros::ServiceServer getGroupStatusS = n_pub->advertiseService(robot_prefix + node_prefix + "get_group_state", getGroupStateF);
 
     publishers_l.push_front(n_pub->advertise<std_msgs::String>(robot_prefix + node_prefix + topic_new_robot, publishers_queue_size, use_latch));
@@ -1130,7 +880,6 @@ int main(int argc, char **argv)
     Logging::init(n_pub, &hostname);
 
     signal(SIGSEGV, handler); // install handler  
-
 
 #ifdef WAIT_FOR_SUBSCRIBERS
     /* Wait for the publishers of topic_new_robot and topic_remove_robot to have a subscriber
@@ -1141,23 +890,13 @@ int main(int argc, char **argv)
     waitForSubscribers(robot_prefix + node_prefix + topic_remove_robot);
 #endif
 
-
-    /*Tutorial*/
-    //ros::ServiceServer sendQuaternionS = n->advertiseService("send_quaternion", sendQuaternion);
-    /*INIT THREADS*/
-
     boost::thread receiveFramesT(receiveFrames);
     boost::thread processIncomingFramesT(processIncomingFrames);
-    // boost::thread resendFrameT(&resendFrames); // this thread re-sends frames ineffective and too less accurate
     boost::thread deleteObsoleteRequestsT(deleteObsoleteRequests);
-    // boost::thread reconnectToMcGroupsT(&reconnectToMcGroups);
     boost::thread requestPendingFramesT(requestPendingFrames);
     boost::thread sendBeaconsT(sendBeacons);
     boost::thread deleteOldPacketsT(deleteOldPackets);
     boost::thread resendRequestedFramesT(resendRequestedFrames);
-
-    // boost::thread checkMutexAvailabilityT(&checkMutexAvailability, &mtx_packets_incomplete, "packets incomplete");
-    // boost::thread checkMutexAvailabilisastyT(&checkMutexAvailability, &mtx_cached_mc_packets, "mtx_cached_mc_packets");
 
     list<ros::Subscriber> sub_robot_pos_l;
 
@@ -1223,9 +962,6 @@ int main(int argc, char **argv)
         mc_handler.createGroupAsRoot(&std::string("mc").append("_").append(hostname));
     }
 
-
-
-
 #ifdef JOIN_ALL_GROUPS
     if (simulation_mode)
     {
@@ -1233,12 +969,8 @@ int main(int argc, char **argv)
 #ifdef DEBUG_OUTPUT
         //  printMcConnections(&mc_trees_l);
 #endif
-
-
     }
 #endif
-
-    // testPacket();
 
     while (ros::ok())
     {
@@ -1254,11 +986,8 @@ int main(int argc, char **argv)
     receiveFramesT.join();
     sendBeaconsT.join();
 
-
-
     /*Close sockets..*/
     close_raw_socket();
-
 
     ROS_INFO("Node terminating...");
 
@@ -1601,18 +1330,7 @@ void receiveFrames()
                 bcasts_l.push_back(bc_str);
 
                 buffer_size = bcast.buffer_str_len_;
-                if (bcast.header_.payload_type == FRAME_DATA_TYPE_ROBOT_UPDATE)
-                {
-                    adhoc_communication::CMgrRobotUpdate r_up;
-                    if (bcast.payload_.compare("") == 0)
-                    {
-                        ROS_ERROR("ERROR: PAYLOAD OF BCAST FRAME IS EMPTY!");
-                        continue;
-                    }
-                    desializeObject((unsigned char*) bcast.payload_.data(), bcast.payload_.length(), &r_up);
-                    publishMessage(r_up, bcast.topic_);
-                }
-                else if (bcast.header_.payload_type == FRAME_DATA_TYPE_ANY)
+                if (bcast.header_.payload_type == FRAME_DATA_TYPE_ANY)
                 {
 
                     if (bcast.payload_.compare("") == 0)
@@ -3082,96 +2800,12 @@ void publishPacket(Packet * p)
         {
             std::string payload = p->getPayload();
 
-            if (p->data_type_ == FRAME_DATA_TYPE_MAP)
-            {
-                nav_msgs::OccupancyGrid map;
-
-                desializeObject((unsigned char*) payload.data(),
-                        payload.length(), &map);
-
-                publishMessage(map, p->topic_);
-            }
-
-            if (p->data_type_ == FRAME_DATA_TYPE_POSITION)
-            {
-
-                adhoc_communication::MmRobotPosition pos =
-                        adhoc_communication::MmRobotPosition();
-                //pos.position = getPoseStampFromNetworkString(
-                //		(unsigned char*) payload.data(), payload.length());
-                desializeObject((unsigned char*) payload.data(), payload.length(), &pos);
-                pos.src_robot = p->hostname_source_;
-                publishMessage(pos, p->topic_);
-            }
-            else if (p->data_type_ == FRAME_DATA_TYPE_ANY)
+            if (p->data_type_ == FRAME_DATA_TYPE_ANY)
             {
                 adhoc_communication::RecvString data = adhoc_communication::RecvString();
                 data.src_robot = p->hostname_source_;
                 data.data = payload;
                 publishMessage(data, p->topic_);
-            }
-            else if (p->data_type_ == FRAME_DATA_TYPE_POINT)
-            {
-                adhoc_communication::MmPoint point;
-                desializeObject((unsigned char*) payload.data(),
-                        payload.length(), &point);
-                point.src_robot = p->hostname_source_;
-                publishMessage(point, p->topic_);
-            }
-            else if (p->data_type_ == FRAME_DATA_TYPE_CONTROLL_MSG)
-            {
-                adhoc_communication::MmControl msg;
-                desializeObject(
-                        (unsigned char*) payload.data(), payload.length(), &msg);
-                msg.src_robot = p->hostname_source_;
-                publishMessage(msg, p->topic_);
-            }
-            else if (p->data_type_ == FRAME_DATA_TYPE_MAP_UPDATE)
-            {
-                adhoc_communication::MmMapUpdate mapUpdate;
-                desializeObject(
-                        (unsigned char*) payload.data(), payload.length(), &mapUpdate);
-                mapUpdate.src_robot = p->hostname_source_;
-                publishMessage(mapUpdate, p->topic_);
-            }
-            else if (p->data_type_ == FRAME_DATA_TYPE_FRONTIER)
-            {
-                adhoc_communication::ExpFrontier frontier;
-                desializeObject(
-                        (unsigned char*) payload.data(), payload.length(), &frontier);
-
-                publishMessage(frontier, p->topic_);
-            }
-            else if (p->data_type_ == FRAME_DATA_TYPE_CLUSTER)
-            {
-                adhoc_communication::ExpCluster cluster;
-                desializeObject(
-                        (unsigned char*) payload.data(), payload.length(), &cluster);
-
-                publishMessage(cluster, p->topic_);
-            }
-            else if (p->data_type_ == FRAME_DATA_TYPE_AUCTION)
-            {
-                adhoc_communication::ExpAuction auc;
-                desializeObject(
-                        (unsigned char*) payload.data(), payload.length(), &auc);
-
-                publishMessage(auc, p->topic_);
-            }
-            else if (p->data_type_ == FRAME_DATA_TYPE_TWIST)
-            {
-                geometry_msgs::Twist twist;
-                desializeObject(
-                        (unsigned char*) payload.data(), payload.length(), &twist);
-
-                publishMessage(twist, p->topic_);
-            }
-            else if (p->data_type_ == FRAME_DATA_TYPE_ROBOT_UPDATE)
-            {
-                adhoc_communication::CMgrRobotUpdate r_up;
-                desializeObject((unsigned char*) payload.data(), payload.length(), &r_up);
-
-                publishMessage(r_up, p->topic_);
             }
             else
                 ROS_ERROR("UNKNOWN DATA TYPE!");
@@ -3181,15 +2815,6 @@ void publishPacket(Packet * p)
 
             ROS_ERROR("NODE THROWS EXCEPTION: %u", e);
         }
-        /*Tutorial*/
-        /*
-        else if(p->data_type_ == FRAME_DATA_TYPE_QUATERNION)
-        {
-
-        geometry_msgs::Quaternion quaternion = getQuaternionFromNetworkString((unsigned char*)payload.data(),payload.length());
-        publishMessage(quaternion, p->topic_);
-        }
-         */
     }
 
 

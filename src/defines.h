@@ -40,19 +40,7 @@ unsigned char bcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};	/*Broadcast a
 #define FRAME_TYPE_MC_DISCONNECT 0x50 // P -> Prune
 #define FRAME_TYPE_BROADCAST 0x62 // b
 
-#define FRAME_DATA_TYPE_FRONTIER 0x46 // F -> Frontier
-#define FRAME_DATA_TYPE_MAP 0x4d 	//M -> Map
-#define FRAME_DATA_TYPE_POSITION 0x50 //P -> Position
 #define FRAME_DATA_TYPE_ANY 0x41	//A -> Any (String)
-#define FRAME_DATA_TYPE_POINT 0x70	//p -> Point
-#define FRAME_DATA_TYPE_MAP_UPDATE 0x55	//U
-#define FRAME_DATA_TYPE_CONTROLL_MSG 0x43	//C
-#define FRAME_DATA_TYPE_AUCTION 0x61	//C
-#define FRAME_DATA_TYPE_CLUSTER 0x63	//C
-#define FRAME_DATA_TYPE_TWIST 0x54	//T -> Twist
-#define FRAME_DATA_TYPE_ROBOT_UPDATE 0x52	//R 
-/*Tutorial*/
-#define FRAME_DATA_TYPE_QUATERNION 0x51 //0x51 in hex means Q in ASCII -> stands for QUATERNION
 
 
 #define MAX_INTERN_JOIN_ATTEMPS 5  //defines how often a robot will try to join a mc group
