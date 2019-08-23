@@ -412,7 +412,7 @@ bool sendString(adhoc_communication::SendString::Request &req, adhoc_communicati
 #endif
     ROS_DEBUG("Service called to send string..");
 
-    ROS_INFO("Sending string to %s", req.dst_robot);
+    ROS_INFO("Sending string to %s", req.dst_robot.c_str());
     res.status = sendPacket(req.dst_robot, req.data, FRAME_DATA_TYPE_ANY, req.topic);
 
 #ifdef PERFORMANCE_LOGGING_SERVICE_CALLS
@@ -1341,7 +1341,7 @@ void receiveFrames()
                     adhoc_communication::RecvString data;
                     data.src_robot = bcast.hostname_source_;
                     data.data = bcast.payload_;
-                    ROS_INFO("Received data from %s: %s", data.src_robot, data.data);
+                    ROS_INFO("Received data from %s: %s", data.src_robot.c_str(), data.data.c_str());
                     publishMessage(data, bcast.topic_);
                 }
 
