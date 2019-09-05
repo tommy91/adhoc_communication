@@ -1,8 +1,7 @@
 #!/usr/bin/python
 import rospy
 from std_msgs.msg import String
-from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Point
+from sensor_msgs.msg import NavSatFix 
 from adhoc_communication.srv import ChangeMCMembership, SendString
 from adhoc_communication.msg import RecvString
 
@@ -16,28 +15,28 @@ robots = [
 	{
 		'name': "robot_0",
 		'mc_name': mc_prefix + "0",
-		'positions': [(0,0),(0,0),(0,0)]
+		'positions': [(0,0,1),(0,0,1),(0,0,1)]
 	},
 	{
 		'name': "robot_1",
 		'mc_name': mc_prefix + "1",
-		'positions': [(0,5),(0,10),(0,5)]
+		'positions': [(0,5,1),(0,10,1),(0,5,1)]
 	}
 ]
 # 	{
 # 		'name': "robot_2", 
 # 		'mc_name': mc_prefix + "2",
-# 		'positions': [(0,-5),(0,-2),(0,-5)]
+# 		'positions': [(0,-5,1),(0,-2,1),(0,-5,1)]
 # 	},
 # 	{
 # 		'name': "robot_3",
 # 		'mc_name': mc_prefix + "3",
-# 		'positions': [(5,0)]
+# 		'positions': [(5,0,1)]
 # 	},
 # 	{
 # 		'name': "robot_4",
 # 		'mc_name': mc_prefix + "4",
-# 		'positions': [(-5,0)]
+# 		'positions': [(-5,0,1)]
 # 	}
 # ]
 
@@ -112,8 +111,8 @@ rospy.init_node("Simple_simulator_2")
 # Setting publishers and subscribers
 for num_robot in range(0,num_robots):
 	pubs = {}
-	position_topic = "robot_%i/base_pose_ground_truth"%num_robot
-	pubs['pos'] = rospy.Publisher(position_topic,Odometry,queue_size=10,latch=False)
+	position_topic = "dev%i/mavros/global_position/global"%num_robot
+	pubs['pos'] = rospy.Publisher(position_topic,NavSatFix,queue_size=10,latch=False)
 	publishers.append(pubs)
 	topic_new_robot_complete = "/robot_" + str(num_robot) + topic_new_robot
 	topic_remove_robot_complete = "/robot_" + str(num_robot) + topic_remove_robot
@@ -132,11 +131,13 @@ try:
 		waitEnterPress()
 	
 		for num_robot in range(0,num_robots):
-			msg = Odometry()
+			msg = NavSatFix()
 			msg.header.stamp = rospy.Time.now()
-			(x,y) = robots[num_robot]['positions'][iteration_count]
-			print "robot_" + str(num_robot) + ": publishing position (" + str(x) + ", " + str(y) + ")"
-			msg.pose.pose.position = Point(x, y, 0)
+			(x,y,z) = robots[num_robot]['positions'][iteration_count]
+			print "robot_" + str(num_robot) + ": publishing position (" + str(x) + ", " + str(y) + ", " + str(z) + ")"
+			msg.latitude = x
+			msg.longitude = y
+			msg.altitude = z
 			publishers[num_robot]['pos'].publish(msg)
 		iteration_count += 1
 		

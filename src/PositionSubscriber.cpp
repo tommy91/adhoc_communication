@@ -14,8 +14,6 @@ PositionSubscriber::PositionSubscriber(std::string robot_name, uint32_t robot_nu
 	robot_name_ = robot_name;
 	robot_number_ = robot_number;
     initialized = false;
-    x_pos_ = 0;
-    y_pos_ = 0;
     callback_count = 0;
     callback_refresh = 1; // every 'callback_refresh' calls of the Subscribe function, the position will be updated.
 }
@@ -25,29 +23,41 @@ PositionSubscriber::~PositionSubscriber()
     // TODO Auto-generated destructor stub
 }
 
-void PositionSubscriber::Subscribe(const nav_msgs::Odometry::ConstPtr& position)
+void PositionSubscriber::Subscribe(const sensor_msgs::NavSatFix& position)
 {
     callback_count++;
 
     if (callback_count % callback_refresh == 0)
     {       
         initialized = true;
-        this->x_pos_ = position->pose.pose.position.x;
-        this->y_pos_ = position->pose.pose.position.y;
-        ROS_INFO("Received new position for %s: (%f, %f)", this->robot_name_.c_str(), this->x_pos_, this->y_pos_);
-
-        //	x_pos_ = 7.3f;
+        position_ = position;
+        ROS_INFO("Received new position for %s: (%f, %f, %f)", this->robot_name_.c_str(), position.latitude, position.longitude, position.altitude);
     }
+}
+
+double PositionSubscriber::getLatitude()
+{
+	return position_.latitude;
+}
+
+double PositionSubscriber::getLongitude()
+{
+	return position_.longitude;
+}
+
+double PositionSubscriber::getAltitude()
+{
+	return position_.altitude;
 }
 
 double PositionSubscriber::calcDistance(PositionSubscriber* other)
 { 
-    //ROS_DEBUG("P1: %f / %f",this->x_pos_,this->y_pos_);
-    //ROS_DEBUG("P2: %f / %f",other->x_pos_,other->y_pos_);
-   // ROS_ERROR("me [%s] %u other [%s] %u", this->robot_name_.c_str(), initialized ,other->robot_name_.c_str() ,other->initialized);
+    // ROS_ERROR("P1: (%f,%f,%f)", getLatitude(), getLongitude(), getAltitude());
+    // ROS_ERROR("P2: (%f,%f,%f)", other->getLatitude(), other->getLongitude(), other->getAltitude());
+	// ROS_ERROR("me [%s] %u other [%s] %u", this->robot_name_.c_str(), initialized, other->robot_name_.c_str(), other->initialized);
     
     if (initialized && other->initialized)
-        return sqrt(pow(x_pos_ - other->x_pos_, 2) + pow(y_pos_ - other->y_pos_, 2));
+        return sqrt(pow(getLatitude() - other->getLatitude(), 2) + pow(getLongitude() - other->getLongitude(), 2) + pow(getAltitude() - other->getAltitude(), 2));
     else
         return -1;
 }

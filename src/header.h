@@ -39,43 +39,19 @@ using std::string;
 #include <asm/types.h>
 
 /* Custom MSG Types*/
-#include "adhoc_communication/ExpAuction.h"
-#include "adhoc_communication/ExpFrontierElement.h"
-#include "adhoc_communication/MmListOfPoints.h"
-#include "adhoc_communication/MmRobotPosition.h"
-#include "adhoc_communication/ExpFrontier.h"
-#include "adhoc_communication/MmMapUpdate.h"
 #include "adhoc_communication/RecvString.h"
-#include "adhoc_communication/MmControl.h"
-#include "adhoc_communication/MmPoint.h"
-#include "adhoc_communication/ExpCluster.h"
-#include "adhoc_communication/CMgrDimensions.h"
-#include "adhoc_communication/CMgrRobotUpdate.h"
 
 /* Custom SRV Types*/
 #include "adhoc_communication/ChangeMCMembership.h"
-#include "adhoc_communication/SendExpCluster.h"
-#include "adhoc_communication/SendMmMapUpdate.h"
-#include "adhoc_communication/SendOccupancyGrid.h"
 #include "adhoc_communication/GetNeighbors.h"
-#include "adhoc_communication/SendExpFrontier.h"
-#include "adhoc_communication/SendMmPoint.h"
-#include "adhoc_communication/SendQuaternion.h"
-#include "adhoc_communication/SendExpAuction.h"
-#include "adhoc_communication/SendMmControl.h"
-#include "adhoc_communication/SendMmRobotPosition.h"
 #include "adhoc_communication/SendString.h"
-#include "adhoc_communication/SendTwist.h"
 #include "adhoc_communication/GetGroupState.h"
-#include "adhoc_communication/SendCMgrRobotUpdate.h"
 #include "adhoc_communication/ShutDown.h"
-#include "adhoc_communication/BroadcastCMgrRobotUpdate.h"
 #include "adhoc_communication/BroadcastString.h"
 
 
-#include "nav_msgs/Odometry.h"
 #include "std_msgs/String.h"
-#include "geometry_msgs/Twist.h"
+#include "sensor_msgs/NavSatFix.h"
 
 #include "functions.h"
 
@@ -156,8 +132,6 @@ uint32_t packet_id_ = -1;
 void socketSend(string network_string);
 
 void deliverMcAckFrame(stc_RoutedFrame& stc_rf, routing_entry& r, bool send_ack);
-geometry_msgs::PoseStamped getPoseStampFromNetworkString(unsigned char* serializedPoseStamp, uint32_t length);
-nav_msgs::OccupancyGrid getMapFromNetworkString(unsigned char* serializedMap, uint32_t length);
 bool joinMCGroup(adhoc_communication::ChangeMCMembership::Request &req, adhoc_communication::ChangeMCMembership::Response &res);
 
 #include "Logging.h"
@@ -282,7 +256,6 @@ void safeFrame(RoutedFrame incomingFrame);
 void sendLinkAck(unsigned char* dest, unsigned char* confirmer_mac, uint32_t id, string source, bool cr, uint8_t type);
 bool gotAck(AckLinkFrame* frame);
 bool gotFrameRecently(RoutedFrame incomingFrame);
-void publishMap(nav_msgs::OccupancyGrid map, std::string topic);
 void publishPacket(Packet* p);
 
 void addDownlinkToMcTree(mc_tree tree, mac downlink);

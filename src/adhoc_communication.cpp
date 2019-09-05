@@ -923,10 +923,11 @@ int main(int argc, char **argv)
 
     if (simulation_mode)
     {
-        std::string topic = "/" + hostname;
-        topic.append("/base_pose_ground_truth");
+    	const char* robot_number_pos = hostname.data() + 6; // Example: get i from robot_i
+        std::string topic = "/dev";
+        topic.append(robot_number_pos);
+        topic.append("/mavros/global_position/global");
 
-        const char* robot_number_pos = hostname.data() + 6; // Example: robot_1 or robot_2 -> robot_i
         try
         {
         	my_sim_position = new PositionSubscriber(hostname, boost::lexical_cast<uint32_t>(std::string(robot_number_pos)));
@@ -941,10 +942,10 @@ int main(int argc, char **argv)
             if ((unsigned) i != my_sim_position->robot_number_)
             {
                 std::string i_as_str = getIntAsString(i);
-                std::string topic_to_sub = "/robot_";
+                std::string topic_to_sub = "/dev";
                 topic_to_sub.append(i_as_str);
 
-                topic_to_sub.append("/base_pose_ground_truth");
+                topic_to_sub.append("/mavros/global_position/global");
                 PositionSubscriber* sub = new PositionSubscriber(std::string("robot_").append(i_as_str), i);
                 sub_robot_pos_l.push_front(n_pub->subscribe(topic_to_sub, 1, &PositionSubscriber::Subscribe, &*sub));
                 robot_positions_l.push_front(sub);

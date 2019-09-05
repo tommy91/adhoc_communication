@@ -25,17 +25,23 @@ public:
 
 	/*!
 	 *
-	   \return the Y coordinate of the specific robot in stage
+	   \return the latitude of the specific robot in stage
 	*/
-	double getYPos();
+	double getLatitude();
 
 	/*!
 	 *
-	   \return the X coordinate of the specific robot in stage
+	   \return the longitude of the specific robot in stage
 	*/
-	double getXPos();
+	double getLongitude();
 
-	/*! Calculates the distance between a other robot and this instance in stage
+	/*!
+	 *
+	   \return the altitude of the specific robot in stage
+	*/
+	double getAltitude();
+
+	/*! Calculates the distance between an other robot and this instance in stage
 	 *
 	   \param other PositionSubscribe of the other robot
 	   \return the calculated distance
@@ -46,16 +52,14 @@ public:
 	 *
 	   \param position Current robot position
 	*/
-	void Subscribe(const nav_msgs::Odometry::ConstPtr& position);
+	void Subscribe(const sensor_msgs::NavSatFix& position);
 
     bool initialized; ///< Defines if the robot position has been initialized
 	std::string robot_name_; ///< Name of the robot in stage. e.g: "robot_0"
 	uint32_t robot_number_; ///< Number of the robot in stage. e.g: number of "robot_0" would be "0"
 
-	nav_msgs::Odometry position; ///< Latest position of the specific robot
-
 private:
-	double x_pos_, y_pos_;
+	sensor_msgs::NavSatFix position_; ///< Latest position of the specific robot
 	uint16_t callback_count, callback_refresh;
 
 
