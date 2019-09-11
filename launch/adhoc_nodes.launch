@@ -26,9 +26,10 @@
 <arg name="loss_ratio" default="0" />
 <arg name="nack_threshold" default="10" />
 <arg name="sim_robot_macs" default="" />
+<arg name="node_name" default="adhoc_communication" />
 
 
-<node pkg="adhoc_communication" type="adhoc_communication" name="robot_0" output="$(arg log_output)">
+<node pkg="adhoc_communication" type="adhoc_communication" ns="dev0" name="$(arg node_name)" output="$(arg log_output)">
 
 	<param name="mac" value="11:00:00:00:00:00" />
 	<param name="robot_name" value="robot_0" />
@@ -59,7 +60,7 @@
 	
 </node>
 
-<node pkg="adhoc_communication" type="adhoc_communication" name="robot_1" output="$(arg log_output)">
+<node pkg="adhoc_communication" type="adhoc_communication" ns="dev1" name="$(arg node_name)" output="$(arg log_output)">
 
 	<param name="mac" value="22:00:00:00:00:00" />
 	<param name="robot_name" value="robot_1" />
@@ -91,7 +92,7 @@
 </node>
 
 <!--
-<node pkg="adhoc_communication" type="adhoc_communication" name="robot_2" output="$(arg log_output)">
+<node pkg="adhoc_communication" type="adhoc_communication" ns="dev2" name="$(arg node_name)" output="$(arg log_output)">
 
 	<param name="mac" value="33:00:00:00:00:00" />
 	<param name="robot_name" value="robot_2" />
@@ -122,7 +123,7 @@
 	
 </node>
 
-<node pkg="adhoc_communication" type="adhoc_communication" name="robot_3" output="$(arg log_output)">
+<node pkg="adhoc_communication" type="adhoc_communication" ns="dev3" name="$(arg node_name)" output="$(arg log_output)">
 
 	<param name="mac" value="44:00:00:00:00:00" />
 	<param name="robot_name" value="robot_3" />
@@ -153,7 +154,7 @@
 	
 </node>
 
-<node pkg="adhoc_communication" type="adhoc_communication" name="robot_4" output="$(arg log_output)">
+<node pkg="adhoc_communication" type="adhoc_communication" ns="dev4" name="$(arg node_name)" output="$(arg log_output)">
 
 	<param name="mac" value="55:00:00:00:00:00" />
 	<param name="robot_name" value="robot_4" />

@@ -8,9 +8,7 @@
 #define DEFINES_H_
 
 //#define DEBUG
-
-
-
+#define PRINT_PARAMS
 
 
 #define DELAY

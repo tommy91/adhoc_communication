@@ -828,6 +828,7 @@ int main(int argc, char **argv)
     ros::NodeHandle b("~");
     ros::NodeHandle b_pub;
 
+    node_name = ros::this_node::getName() + "/";  // getName() returns the ros node name as "/NAMESPACE/NODE_NAME"
 
     n_priv = &b;
     n_pub = &b_pub;
@@ -851,7 +852,7 @@ int main(int argc, char **argv)
     }
 
 #ifdef PRINT_PARAMS
-    ROS_ERROR("NODE STARTED WITH FOLLOWING SETTINGS:");
+    ROS_ERROR("NODE[%s] STARTED WITH FOLLOWING SETTINGS:", node_name.c_str());
     ROS_ERROR("HOSTNAME[%s] MAC[%s] INTERFACE[%s]", hostname.c_str(), getMacAsStr(src_mac).c_str(), interface);
     ROS_ERROR("num_link_retrans=%u num_e2e_retrans=%u num_rreq=%u", num_link_retrans, num_e2e_retrans, num_rreq);
     ROS_ERROR("max_packet_size=%u max_frame_size=%u hop_limit_min=%u hop_limit_max=%u", max_packet_size, max_frame_size, hop_limit_min, hop_limit_max);
@@ -861,21 +862,16 @@ int main(int argc, char **argv)
 
 
     /*Advertise services and listeners*/
-    std::string robot_prefix = "";
-    if (simulation_mode)
-    {
-        robot_prefix = "/" + hostname + "/";
-    }
 
-    ros::ServiceServer sendStringS = n_pub->advertiseService(robot_prefix + node_prefix + "send_string", sendString);
-    ros::ServiceServer getNeighborsS = n_pub->advertiseService(robot_prefix + node_prefix + "get_neighbors", getNeighbors);
-    ros::ServiceServer joinMCGroupS = n_pub->advertiseService(robot_prefix + node_prefix + "join_mc_group", joinMCGroup);
-    ros::ServiceServer sendBcastStringS = n_pub->advertiseService(robot_prefix + node_prefix + "broadcast_string", sendBroadcastString);
-    ros::ServiceServer shutDownRosS = n_pub->advertiseService(robot_prefix + node_prefix + "shut_down", shutDownRos);
-    ros::ServiceServer getGroupStatusS = n_pub->advertiseService(robot_prefix + node_prefix + "get_group_state", getGroupStateF);
+    ros::ServiceServer sendStringS = n_pub->advertiseService(node_name + "send_string", sendString);
+    ros::ServiceServer getNeighborsS = n_pub->advertiseService(node_name + "get_neighbors", getNeighbors);
+    ros::ServiceServer joinMCGroupS = n_pub->advertiseService(node_name + "join_mc_group", joinMCGroup);
+    ros::ServiceServer sendBcastStringS = n_pub->advertiseService(node_name + "broadcast_string", sendBroadcastString);
+    ros::ServiceServer shutDownRosS = n_pub->advertiseService(node_name + "shut_down", shutDownRos);
+    ros::ServiceServer getGroupStatusS = n_pub->advertiseService(node_name + "get_group_state", getGroupStateF);
 
-    publishers_l.push_front(n_pub->advertise<std_msgs::String>(robot_prefix + node_prefix + topic_new_robot, publishers_queue_size, use_latch));
-    publishers_l.push_front(n_pub->advertise<std_msgs::String>(robot_prefix + node_prefix + topic_remove_robot, publishers_queue_size, use_latch));
+    publishers_l.push_front(n_pub->advertise<std_msgs::String>(node_name + topic_new_robot, publishers_queue_size, use_latch));
+    publishers_l.push_front(n_pub->advertise<std_msgs::String>(node_name + topic_remove_robot, publishers_queue_size, use_latch));
 
     Logging::init(n_pub, &hostname);
 
@@ -886,8 +882,8 @@ int main(int argc, char **argv)
      * such that no message published is lost (meaning no messages are send to no one).
      * This function currently just waits for a subscriber per publisher.
      */
-    waitForSubscribers(robot_prefix + node_prefix + topic_new_robot);
-    waitForSubscribers(robot_prefix + node_prefix + topic_remove_robot);
+    waitForSubscribers(node_name + topic_new_robot);
+    waitForSubscribers(node_name + topic_remove_robot);
 #endif
 
     boost::thread receiveFramesT(receiveFrames);
@@ -1459,7 +1455,7 @@ void sendBeacons()
                     msg.data = neighbor.hostname;
                     lock_neighbors.unlock();
 
-                    publishMessage(msg, node_prefix + topic_remove_robot);
+                    publishMessage(msg, node_name + topic_remove_robot);
                     lock_neighbors.lock();
                     neighbor.reachable = false;
 
@@ -2448,7 +2444,7 @@ void processBeacon(Beacon * beacon)
         std_msgs::String msg;
         msg.data = hm.hostname;
         lock_neighbors.unlock();
-        publishMessage(msg, node_prefix + topic_new_robot);
+        publishMessage(msg, node_name + topic_new_robot);
         lock_neighbors.lock();
         ROS_ERROR("NEW NEIGHBOR: NAME[%s]", hm.hostname.c_str());
 

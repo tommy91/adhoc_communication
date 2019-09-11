@@ -122,6 +122,7 @@ void handler(int sig)
 
 
 /*VARS DECLARATION*/
+std::string node_name;
 unsigned char* interface = NULL; // using outgoing interface
 std::string hostname; // hostname of the node
 std::string mac_as_string = "";
@@ -240,9 +241,6 @@ boost::mutex mtx_notify;
 
 boost::condition_variable got_request_response;
 boost::condition_variable got_rframe_ack;
-
-
-std::string node_prefix = "adhoc_communication/";
 
 
 std::string getHostnameFromMac(unsigned char mac[6]);
