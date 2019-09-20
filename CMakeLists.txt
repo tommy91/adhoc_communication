@@ -58,6 +58,7 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    ChangeMCMembership.srv
    GetNeighbors.srv
+   GetID.srv
    SendString.srv
    GetGroupState.srv
    ShutDown.srv

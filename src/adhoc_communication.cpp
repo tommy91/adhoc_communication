@@ -12,7 +12,7 @@
  *
  * The node advertise the following services:
  * 1) 	name: send_string
- * 		type: adhoc_communication::sendString
+ * 		type: adhoc_communication::SendString
  * 		use: to send any data in form of a string over the network.
  * 		     At the receiver the data will be published locally on the topic specified in the request.
  * 		     (To broadcast a message you must set the destination hostname as an empty string.)
@@ -22,21 +22,25 @@
  * 		type: adhoc_communication::GetNeighbors
  * 		use: to get the reachable neighbors
  *
- * 3)	name: join_mc_group
+ * 3)	name: get_id
+ * 		type: adhoc_communication::GetID
+ * 		use: to get the identifier (hostname [or mac? todo]) of the node
+ *
+ * 4)	name: join_mc_group
  * 		type: adhoc_communication::ChangeMCMembership
  * 		use: to tell the node to attempt to connect to (or disconnect from) a multicast group
  *
- * 4)	name: broadcast_string
+ * 5)	name: broadcast_string
  * 		type: adhoc_communication::BroadcastString
  * 		use: to send any data in form of a string over the network as a broadcast, meaning no ack will be received by the sender.
  * 		     Also no segmentation will be applied if the packet is too big.
  * 		     At the receiver the data will be published locally on the topic specified in the request.
  *
- * 5)	name: shut_down
+ * 6)	name: shut_down
  * 		type: adhoc_communication::ShutDown
  * 		use: to shut down the ros node
  *
- * 6)	name: get_group_state
+ * 7)	name: get_group_state
  * 		type: adhoc_communication::GetGroupState
  * 		use: to get the status of a specified multicast group
  *
@@ -361,10 +365,19 @@ bool getNeighbors(adhoc_communication::GetNeighbors::Request &req, adhoc_communi
         string hn = current_frame.hostname;
 
         if (current_frame.reachable)
-            res.neigbors.push_back(hn);
+            res.neighbors.push_back(hn);
     }
 
     return true;
+}
+
+bool getID(adhoc_communication::GetID::Request &req, adhoc_communication::GetID::Response &res)
+{
+    /* Description:
+	 * Service call to get the hostname of the node
+	 */
+	res.id = hostname;
+	return true;
 }
 
 bool sendBroadcast(string& topic, string& data, uint8_t type, uint16_t range)
@@ -865,6 +878,7 @@ int main(int argc, char **argv)
 
     ros::ServiceServer sendStringS = n_pub->advertiseService(node_name + "send_string", sendString);
     ros::ServiceServer getNeighborsS = n_pub->advertiseService(node_name + "get_neighbors", getNeighbors);
+    ros::ServiceServer getIDS = n_pub->advertiseService(node_name + "get_id", getID);
     ros::ServiceServer joinMCGroupS = n_pub->advertiseService(node_name + "join_mc_group", joinMCGroup);
     ros::ServiceServer sendBcastStringS = n_pub->advertiseService(node_name + "broadcast_string", sendBroadcastString);
     ros::ServiceServer shutDownRosS = n_pub->advertiseService(node_name + "shut_down", shutDownRos);

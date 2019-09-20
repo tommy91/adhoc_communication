@@ -44,6 +44,7 @@ using std::string;
 /* Custom SRV Types*/
 #include "adhoc_communication/ChangeMCMembership.h"
 #include "adhoc_communication/GetNeighbors.h"
+#include "adhoc_communication/GetID.h"
 #include "adhoc_communication/SendString.h"
 #include "adhoc_communication/GetGroupState.h"
 #include "adhoc_communication/ShutDown.h"
