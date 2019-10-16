@@ -11,7 +11,7 @@
  * Destination MAC 	// ff:ff:ff:ff:ff:ff or "real" destination. Depends on CR			6Byte
  * SOURCE MAC		// MAC of the using interface										6Byte
  * ETH_TYPE_FIELD	// 0x4148 (AH as string)											2Byte
- * FRAME_TYPE		// 0x64 (d as string)												1Byte
+ * FRAME_TYPE		// 0x44 (D as string)												1Byte
  * DESTINATION		// destination mac													6Byte
  * FRAME ID			// id of frame														4Byte
  * ROUTE ID																				4Byte

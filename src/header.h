@@ -124,6 +124,7 @@ void handler(int sig)
 
 /*VARS DECLARATION*/
 std::string node_name;
+std::string node_namespace;
 unsigned char* interface = NULL; // using outgoing interface
 std::string hostname; // hostname of the node
 std::string mac_as_string = "";
@@ -216,6 +217,8 @@ bool recursive_mc_ack = false;
 double loss_ratio = 0;
 std::string topic_new_robot = "new_robot";
 std::string topic_remove_robot = "remove_robot";
+std::string topic_position = "/mavros/global_position/global";
+std::string sim_namespace_prefix = "/prj_device_";
 std::string log_path = "";
 std::string sim_robot_macs = "";
 std::string good_neighbors = "";
@@ -346,8 +349,6 @@ int eth_raw_init()
         {
             src_mac[i] = ifr.ifr_hwaddr.sa_data[i];
         }
-        ROS_INFO("Host MAC address: %02X:%02X:%02X:%02X:%02X:%02X\n",
-                src_mac[0], src_mac[1], src_mac[2], src_mac[3], src_mac[4], src_mac[5]);
     }
 
     ROS_INFO("Host MAC address: %02X:%02X:%02X:%02X:%02X:%02X\n",
@@ -750,33 +751,29 @@ bool isReachable(unsigned char mac[6])
     if (simulation_mode)
     {
         std::string other_robot_name_ = getHostnameFromMac(mac);
+//        ROS_ERROR("other_robot_name_ %s", other_robot_name_.c_str());
 
         for (std::list<PositionSubscriber*>::iterator it = robot_positions_l.begin(); it != robot_positions_l.end(); ++it)
         {
-        	if ((*it)->robot_name_.compare(other_robot_name_) == 0)
+//        	ROS_ERROR("it %s, %d", (*it)->getRobotName().c_str(), (*it)->getRobotName().compare(other_robot_name_));
+        	if ((*it)->getRobotName().compare(other_robot_name_) == 0)
             {
                 double d = my_sim_position->calcDistance(*it);
 
-                //ROS_ERROR("d: %f",d);
+//                ROS_ERROR("d: %f",d);
                 if (d == -1)
                 {
-
                     return false;
                 }
 
                 double p_rx = p_tx - (l_0_model + 10 * n_model * log10(d));
 
-                if (d < 10)
-                	return true;
-                else
-                	return false;
-
-//                if (p_thres <= p_rx)
-//                {
-//                    //ROS_DEBUG("connected with %s %f %f",other_robot_name_.c_str(),d,p_rx);
-//                    return true;
-//                } else
-//                    return false;
+                if (p_thres <= p_rx)
+                {
+                    //ROS_DEBUG("connected with %s %f %f",other_robot_name_.c_str(),d,p_rx);
+                    return true;
+                } else
+                    return false;
 
             }
         }

@@ -574,7 +574,7 @@ bool sendPacket(std::string &hostname_destination, std::string& payload, uint8_t
 
                 if (mc_t->root && mc_t->downlinks_l_.size() == 0)
                 {
-                    ROS_DEBUG("THERE ARE NO OTHER MEMBERS IN THE MC GROUP [%s]", mc_t->group_name_.c_str());
+                    ROS_INFO("THERE ARE NO OTHER MEMBERS IN THE MC GROUP [%s]", mc_t->group_name_.c_str());
                     return true;
                 }
             }
@@ -842,6 +842,8 @@ int main(int argc, char **argv)
     ros::NodeHandle b_pub;
 
     node_name = ros::this_node::getName() + "/";  // getName() returns the ros node name as "/NAMESPACE/NODE_NAME"
+    node_namespace = ros::this_node::getNamespace();
+
 
     n_priv = &b;
     n_pub = &b_pub;
@@ -875,6 +877,7 @@ int main(int argc, char **argv)
 
 
     /*Advertise services and listeners*/
+    ROS_ERROR("Advertise services and listeners");
 
     ros::ServiceServer sendStringS = n_pub->advertiseService(node_name + "send_string", sendString);
     ros::ServiceServer getNeighborsS = n_pub->advertiseService(node_name + "get_neighbors", getNeighbors);
@@ -934,28 +937,26 @@ int main(int argc, char **argv)
     if (simulation_mode)
     {
     	const char* robot_number_pos = hostname.data() + 6; // Example: get i from robot_i
-        std::string topic = "/dev";
-        topic.append(robot_number_pos);
-        topic.append("/mavros/global_position/global");
+        std::string topic = node_namespace + topic_position;
 
         try
         {
         	my_sim_position = new PositionSubscriber(hostname, boost::lexical_cast<uint32_t>(std::string(robot_number_pos)));
         } catch (boost::bad_lexical_cast const&)
         {
-            ROS_FATAL("If parameter simulation mode is set, the hostname of the robot must be like the robot names of the stage robot names, e.g., robot_0 or robot_1 etc.");
+            ROS_FATAL("If parameter simulation mode is set, the hostname of the robot must be like the robot names of the stage robot names, e.g., robot_1 or robot_2 etc.");
             return 0;
         }
 
-        for (int i = 0; i < robots_in_simulation; i++)
+        // Starting from robot_1
+        for (int i = 1; i <= robots_in_simulation; i++)
         {
-            if ((unsigned) i != my_sim_position->robot_number_)
+            if ((unsigned) i != my_sim_position->getRobotNumber())
             {
                 std::string i_as_str = getIntAsString(i);
-                std::string topic_to_sub = "/dev";
+                std::string topic_to_sub = sim_namespace_prefix;
                 topic_to_sub.append(i_as_str);
-
-                topic_to_sub.append("/mavros/global_position/global");
+                topic_to_sub.append(topic_position);
                 PositionSubscriber* sub = new PositionSubscriber(std::string("robot_").append(i_as_str), i);
                 sub_robot_pos_l.push_front(n_pub->subscribe(topic_to_sub, 1, &PositionSubscriber::Subscribe, &*sub));
                 robot_positions_l.push_front(sub);
@@ -1109,9 +1110,7 @@ void receiveFrames()
 
     while (ros::ok())
     {
-
-
-        //WAIT for incoming packet.../
+    	//WAIT for incoming packet.../
         recvfrom(raw_socket, buffer_incoming, ETHER_MAX_LEN, 0, NULL, NULL);
 
         /*
@@ -1144,6 +1143,8 @@ void receiveFrames()
         bool packet_is_bcast = compareMac(dest_mac_p, bcast_mac);
         bool process_frame = true;
 
+//        ROS_ERROR("Received frame %s, %s, %d, %d, %02X", getMacAsStr(ethernet_header->eh_source).c_str(), getMacAsStr(dest_mac_p).c_str(), packet_4_me, packet_is_bcast, frame_type);
+
 
         /*
          * This option is for testing the re-sent features of the protocol.
@@ -1172,7 +1173,7 @@ void receiveFrames()
             }
         }
 
-#ifdef USE_CHANNEL_MODEL                 
+#ifdef USE_CHANNEL_MODEL
         process_frame = isReachable(ethernet_header->eh_source);
 #endif                  
         if (!process_frame)
@@ -1407,9 +1408,11 @@ void publishMessage(message m, string topic)
     try
     {
         bool pubExsists = false;
-        std::string topic_w_prefix = "/" + hostname + "/" + topic;
+        std::string topic_w_prefix = node_name + topic;
         if (simulation_mode)
             topic = topic_w_prefix;
+
+        ROS_INFO("PUBLISHING IN %s", topic.c_str());
 
         for (std::list<ros::Publisher>::iterator i = publishers_l.begin(); i != publishers_l.end(); i++)
         {
@@ -1469,7 +1472,7 @@ void sendBeacons()
                     msg.data = neighbor.hostname;
                     lock_neighbors.unlock();
 
-                    publishMessage(msg, node_name + topic_remove_robot);
+                    publishMessage(msg, topic_remove_robot);
                     lock_neighbors.lock();
                     neighbor.reachable = false;
 
@@ -2458,7 +2461,7 @@ void processBeacon(Beacon * beacon)
         std_msgs::String msg;
         msg.data = hm.hostname;
         lock_neighbors.unlock();
-        publishMessage(msg, node_name + topic_new_robot);
+        publishMessage(msg, topic_new_robot);
         lock_neighbors.lock();
         ROS_ERROR("NEW NEIGHBOR: NAME[%s]", hm.hostname.c_str());
 

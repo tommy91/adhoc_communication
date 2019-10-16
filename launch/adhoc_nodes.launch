@@ -29,40 +29,9 @@
 <arg name="node_name" default="adhoc_communication" />
 
 
-<node pkg="adhoc_communication" type="adhoc_communication" ns="dev0" name="$(arg node_name)" output="$(arg log_output)">
+<node pkg="adhoc_communication" type="adhoc_communication" ns="prj_device_1" name="$(arg node_name)" output="$(arg log_output)">
 
 	<param name="mac" value="11:00:00:00:00:00" />
-	<param name="robot_name" value="robot_0" />
-	
-	<param name="interface" value="$(arg interface)" />
-	<param name="num_link_retrans" value="$(arg num_link_retrans)" />
-	<param name="num_e2e_retrans" value="$(arg num_e2e_retrans)" />
-	<param name="num_rreq" value="$(arg num_rreq)" />
-	<param name="max_frame_size" value="$(arg max_frame_size)" />
-	<param name="hop_limit_min" value="$(arg hop_limit_min)" />
-	<param name="hop_limit_max" value="$(arg hop_limit_max)" />
-	<param name="hop_limit_increment" value="$(arg hop_limit_increment)" />
-	<param name="beacon_interval" value="$(arg beacon_interval)" />
-	<param name="max_packet_size" value="$(arg max_packet_size)" />
-	<param name="simulation_mode" value="$(arg simulation_mode)" />
-	<param name="robots_in_simulation" value="$(arg robots_in_simulation)" />
-	<param name="p_thres" value="$(arg p_thres)" />
-	<param name="p_tx" value="$(arg p_tx)" />
-	<param name="n_model" value="$(arg n_model)" />
-	<param name="l_0_model" value="$(arg l_0_model)" />
-	<param name="topic_new_robot" value="$(arg topic_new_robot)" />
-	<param name="topic_remove_robot" value="$(arg topic_remove_robot)" />
-	<param name="rebuild_mc_tree" value="$(arg rebuild_mc_tree)" />
-	<param name="recursive_mc_ack" value="$(arg recursive_mc_ack)" />
-	<param name="loss_ratio" value="$(arg loss_ratio)" />
-	<param name="nack_threshold" value="$(arg nack_threshold)" />
-	<param name="sim_robot_macs" value="$(arg sim_robot_macs)" />
-	
-</node>
-
-<node pkg="adhoc_communication" type="adhoc_communication" ns="dev1" name="$(arg node_name)" output="$(arg log_output)">
-
-	<param name="mac" value="22:00:00:00:00:00" />
 	<param name="robot_name" value="robot_1" />
 	
 	<param name="interface" value="$(arg interface)" />
@@ -91,10 +60,9 @@
 	
 </node>
 
-<!--
-<node pkg="adhoc_communication" type="adhoc_communication" ns="dev2" name="$(arg node_name)" output="$(arg log_output)">
+<node pkg="adhoc_communication" type="adhoc_communication" ns="prj_device_2" name="$(arg node_name)" output="$(arg log_output)">
 
-	<param name="mac" value="33:00:00:00:00:00" />
+	<param name="mac" value="22:00:00:00:00:00" />
 	<param name="robot_name" value="robot_2" />
 	
 	<param name="interface" value="$(arg interface)" />
@@ -123,9 +91,10 @@
 	
 </node>
 
-<node pkg="adhoc_communication" type="adhoc_communication" ns="dev3" name="$(arg node_name)" output="$(arg log_output)">
+<!--
+<node pkg="adhoc_communication" type="adhoc_communication" ns="prj_device_3" name="$(arg node_name)" output="$(arg log_output)">
 
-	<param name="mac" value="44:00:00:00:00:00" />
+	<param name="mac" value="33:00:00:00:00:00" />
 	<param name="robot_name" value="robot_3" />
 	
 	<param name="interface" value="$(arg interface)" />
@@ -154,10 +123,41 @@
 	
 </node>
 
-<node pkg="adhoc_communication" type="adhoc_communication" ns="dev4" name="$(arg node_name)" output="$(arg log_output)">
+<node pkg="adhoc_communication" type="adhoc_communication" ns="prj_device_4" name="$(arg node_name)" output="$(arg log_output)">
+
+	<param name="mac" value="44:00:00:00:00:00" />
+	<param name="robot_name" value="robot_4" />
+	
+	<param name="interface" value="$(arg interface)" />
+	<param name="num_link_retrans" value="$(arg num_link_retrans)" />
+	<param name="num_e2e_retrans" value="$(arg num_e2e_retrans)" />
+	<param name="num_rreq" value="$(arg num_rreq)" />
+	<param name="max_frame_size" value="$(arg max_frame_size)" />
+	<param name="hop_limit_min" value="$(arg hop_limit_min)" />
+	<param name="hop_limit_max" value="$(arg hop_limit_max)" />
+	<param name="hop_limit_increment" value="$(arg hop_limit_increment)" />
+	<param name="beacon_interval" value="$(arg beacon_interval)" />
+	<param name="max_packet_size" value="$(arg max_packet_size)" />
+	<param name="simulation_mode" value="$(arg simulation_mode)" />
+	<param name="robots_in_simulation" value="$(arg robots_in_simulation)" />
+	<param name="p_thres" value="$(arg p_thres)" />
+	<param name="p_tx" value="$(arg p_tx)" />
+	<param name="n_model" value="$(arg n_model)" />
+	<param name="l_0_model" value="$(arg l_0_model)" />
+	<param name="topic_new_robot" value="$(arg topic_new_robot)" />
+	<param name="topic_remove_robot" value="$(arg topic_remove_robot)" />
+	<param name="rebuild_mc_tree" value="$(arg rebuild_mc_tree)" />
+	<param name="recursive_mc_ack" value="$(arg recursive_mc_ack)" />
+	<param name="loss_ratio" value="$(arg loss_ratio)" />
+	<param name="nack_threshold" value="$(arg nack_threshold)" />
+	<param name="sim_robot_macs" value="$(arg sim_robot_macs)" />
+	
+</node>
+
+<node pkg="adhoc_communication" type="adhoc_communication" ns="prj_device_5" name="$(arg node_name)" output="$(arg log_output)">
 
 	<param name="mac" value="55:00:00:00:00:00" />
-	<param name="robot_name" value="robot_4" />
+	<param name="robot_name" value="robot_5" />
 	
 	<param name="interface" value="$(arg interface)" />
 	<param name="num_link_retrans" value="$(arg num_link_retrans)" />

@@ -32,7 +32,7 @@ unsigned char bcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};	/*Broadcast a
 #define FRAME_TYPE_TRANSPORT_ACK 0x41 // A -> Acknowledgment (e2e frame)
 #define FRAME_TYPE_CR_DETECTION 0x64 // d -> Detection
 #define FRAME_TYPE_CR_SELECTION 0x53 // s -> Selection
-#define FRAME_TYPE_MC_ACK 0x6d // m -> Selection
+#define FRAME_TYPE_MC_ACK 0x6d // m -> MC Ack
 #define FRAME_TYPE_MC_NACK 0x4e // N -> Nack
 #define FRAME_TYPE_MC_ACTIVATION 0x59// Y 
 #define FRAME_TYPE_MC_DISCONNECT 0x50 // P -> Prune
